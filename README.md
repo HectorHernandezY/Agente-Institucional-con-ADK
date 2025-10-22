@@ -63,13 +63,6 @@ agent-utem/
 }
 ```
 
-## 🔐 Requisitos GCP
-
-- **Project ID:** `muruna-utem-project`
-- **Bucket:** `db_agent_utem`
-- **APIs habilitadas:** Vertex AI, Firestore, Cloud Storage
-- **Service Account:** `433491555173-compute@developer.gserviceaccount.com`
-
 ## 🐛 Troubleshooting
 
 ```bash
