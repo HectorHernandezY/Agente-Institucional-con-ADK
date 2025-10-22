@@ -1,0 +1,13 @@
+# Entorno virtual local
+.venv/
+
+# Variables de entorno
+.env
+
+# Archivos de Python compilados
+__pycache__/
+*.pyc
+
+# Archivos locales que no quiero sobrescribir
+pyproject.toml
+poetry.lock
