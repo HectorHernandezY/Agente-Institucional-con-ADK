@@ -1,13 +1,15 @@
 from __future__ import annotations
 import os
-from typing import  Any, Optional
-import numpy as np
 import re
+import numpy as np
+from typing import Any, Optional
+import traceback
 
 from google.cloud import firestore
 from vertexai.language_models import TextEmbeddingModel
 from google.adk.tools import FunctionTool
 from google.auth import default
+import vertexai
 
 # Configuración
 PROJECT_ID = os.getenv("FIRESTORE_PROJECT_ID", "muruna-utem-project")
@@ -16,8 +18,6 @@ VERTEX_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 # Configurar credenciales
 credentials, _ = default(quota_project_id=PROJECT_ID)
 db = firestore.Client(project=PROJECT_ID, credentials=credentials)
-
-import vertexai
 vertexai.init(project=PROJECT_ID, location=VERTEX_LOCATION, credentials=credentials)
 
 try:
@@ -53,10 +53,17 @@ def search_documents(
     """
     Busca información en los documentos indexados.
     
+    Nueva estructura:
+    rag_vectores2/
+      └── {doc_id}/
+          ├── metadata
+          └── chunks/
+              ├── chunk_0
+              └── ...
+    
     Args:
         query: Pregunta o consulta del usuario
-        document_name: (Opcional) Nombre del documento específico para filtrar. 
-                      Puede ser nombre parcial (ej: "Ing. Industrial" o "Industrial")
+        document_name: (Opcional) Nombre del documento específico para filtrar
         top_k: Número máximo de resultados
         similarity_threshold: Umbral mínimo de similitud (0-1)
     
@@ -68,46 +75,74 @@ def search_documents(
         query_embeddings = embedding_model.get_embeddings([query])
         query_vector = query_embeddings[0].values
         
-        # 2. Buscar chunks en Firestore
-        chunks_ref = db.collection("rag_vectores")
-        chunks = list(chunks_ref.stream())
+        # 2. Obtener todos los documentos de la colección principal
+        docs_ref = db.collection("rag_vectores2")
+        all_docs = list(docs_ref.stream())
         
-        # 3. Filtrar por documento si se especifica (búsqueda flexible)
+        if not all_docs:
+            return {
+                "ok": False,
+                "status": "No hay documentos indexados",
+                "message": "La colección rag_vectores2 está vacía"
+            }
+        
+        # 3. Filtrar por nombre de documento si se especifica
         if document_name:
             normalized_search = normalize_doc_name(document_name)
-            filtered_chunks = []
+            filtered_doc_ids = []
+            
+            for doc in all_docs:
+                doc_data = doc.to_dict()
+                doc_name = doc_data.get("doc_name", "")
+                normalized_doc = normalize_doc_name(doc_name)
+                
+                # Búsqueda parcial
+                if normalized_search in normalized_doc or normalized_doc in normalized_search:
+                    filtered_doc_ids.append(doc.id)
+            
+            if not filtered_doc_ids:
+                return {
+                    "ok": False,
+                    "status": f"No se encontró documento: '{document_name}'",
+                    "message": "Verifica el nombre del documento"
+                }
+            
+            target_doc_ids = filtered_doc_ids
+        else:
+            target_doc_ids = [doc.id for doc in all_docs]
+        
+        # 4. Buscar en los chunks de cada documento
+        results = []
+        
+        for doc_id in target_doc_ids:
+            # Obtener metadata del documento
+            doc_ref = db.collection("rag_vectores2").document(doc_id)
+            doc_metadata = doc_ref.get().to_dict()
+            
+            # Acceder a la subcolección de chunks
+            chunks_ref = doc_ref.collection("chunks")
+            chunks = list(chunks_ref.stream())
             
             for chunk_doc in chunks:
                 chunk_data = chunk_doc.to_dict()
-                doc_name = chunk_data.get("doc_name", "")
-                normalized_doc = normalize_doc_name(doc_name)
                 
-                # Búsqueda parcial (contiene)
-                if normalized_search in normalized_doc or normalized_doc in normalized_search:
-                    filtered_chunks.append(chunk_data)
-            
-            chunks_data = filtered_chunks
-        else:
-            chunks_data = [chunk_doc.to_dict() for chunk_doc in chunks]
-        
-        # 4. Calcular similitudes
-        results = []
-        
-        for chunk_data in chunks_data:
-            if "embedding" not in chunk_data or "text" not in chunk_data:
-                continue
-            
-            similarity = cosine_similarity(query_vector, chunk_data["embedding"])
-            
-            if similarity >= similarity_threshold:
-                results.append({
-                    "chunk_id": chunk_data.get("chunk_id"),
-                    "text": chunk_data.get("text"),
-                    "doc_name": chunk_data.get("doc_name"),
-                    "gcs_uri": chunk_data.get("gcs_uri"),
-                    "chunk_index": chunk_data.get("chunk_index", 0),
-                    "similarity_score": round(similarity, 4)
-                })
+                if "embedding" not in chunk_data or "text" not in chunk_data:
+                    continue
+                
+                # Calcular similitud
+                similarity = cosine_similarity(query_vector, chunk_data["embedding"])
+                
+                if similarity >= similarity_threshold:
+                    results.append({
+                        "doc_id": doc_id,
+                        "doc_name": doc_metadata.get("doc_name", "Unknown"),
+                        "chunk_id": chunk_data.get("chunk_id"),
+                        "chunk_index": chunk_data.get("chunk_index"),
+                        "text": chunk_data.get("text"),
+                        "similarity_score": similarity,
+                        "gcs_uri": doc_metadata.get("gcs_uri"),
+                        "firestore_path": f"rag_vectores2/{doc_id}/chunks/{chunk_doc.id}"
+                    })
         
         # 5. Ordenar por similitud y limitar
         results.sort(key=lambda x: x["similarity_score"], reverse=True)
@@ -117,8 +152,11 @@ def search_documents(
         if top_results:
             batch = db.batch()
             for result in top_results:
-                doc_ref = db.collection("rag_vectores").document(result["chunk_id"])
-                batch.update(doc_ref, {
+                doc_id = result["doc_id"]
+                chunk_id = result["chunk_id"]
+                chunk_ref = db.collection("rag_vectores2").document(doc_id).collection("chunks").document(chunk_id)
+                
+                batch.update(chunk_ref, {
                     "access_count": firestore.Increment(1),
                     "last_accessed": firestore.SERVER_TIMESTAMP
                 })
@@ -126,7 +164,7 @@ def search_documents(
         
         search_scope = f"documento '{document_name}'" if document_name else "todos los documentos"
         
-        # 7. Formatear respuesta con los textos completos
+        # 7. Formatear respuesta
         contexts_text = "\n\n---\n\n".join([
             f"[{r['doc_name']} - Chunk {r['chunk_index']}]\n{r['text']}"
             for r in top_results
@@ -138,12 +176,11 @@ def search_documents(
             "query": query,
             "document_filter": document_name,
             "contexts": top_results,
-            "contexts_text": contexts_text,  # Texto formateado para el LLM
+            "contexts_text": contexts_text,
             "total_found": len(results)
         }
         
     except Exception as e:
-        import traceback
         return {
             "ok": False,
             "status": "Error",
@@ -156,44 +193,44 @@ def list_available_documents() -> dict[str, Any]:
     """
     Lista todos los documentos disponibles en el sistema RAG.
     
+    Nueva estructura: lee de rag_vectores2/ (documentos principales)
+    
     Returns:
-        Lista de documentos únicos con metadata
+        Lista de documentos con metadata
     """
     try:
-        chunks_ref = db.collection("rag_vectores")
-        chunks = chunks_ref.stream()
+        docs_ref = db.collection("rag_vectores2")
+        docs = docs_ref.stream()
         
-        # Agrupar por doc_id para obtener documentos únicos
-        docs_dict = {}
+        documents = []
         
-        for chunk_doc in chunks:
-            chunk_data = chunk_doc.to_dict()
-            doc_id = chunk_data.get("doc_id")
-            
-            if doc_id not in docs_dict:
-                docs_dict[doc_id] = {
-                    "doc_id": doc_id,
-                    "doc_name": chunk_data.get("doc_name"),
-                    "gcs_uri": chunk_data.get("gcs_uri"),
-                    "total_chunks": chunk_data.get("total_chunks", 0),
-                    "created_at": chunk_data.get("created_at")
-                }
-        
-        documents = list(docs_dict.values())
+        for doc in docs:
+            doc_data = doc.to_dict()
+            documents.append({
+                "doc_id": doc.id,
+                "doc_name": doc_data.get("doc_name", "Unknown"),
+                "total_chunks": doc_data.get("total_chunks", 0),
+                "file_type": doc_data.get("file_type", "Unknown"),
+                "gcs_uri": doc_data.get("gcs_uri"),
+                "created_at": doc_data.get("created_at"),
+                "firestore_path": f"rag_vectores2/{doc.id}"
+            })
         
         # Formatear lista legible
-        docs_list = "\n".join([f"- {doc['doc_name']}" for doc in documents])
+        docs_list = "\n".join([
+            f"- {doc['doc_name']} ({doc['file_type']}, {doc['total_chunks']} chunks)"
+            for doc in documents
+        ])
         
         return {
             "ok": True,
             "status": f"Se encontraron {len(documents)} documentos",
             "documents": documents,
-            "documents_list": docs_list,  # Lista formateada para el LLM
+            "documents_list": docs_list,
             "total_documents": len(documents)
         }
         
     except Exception as e:
-        import traceback
         return {
             "ok": False,
             "status": "Error",
