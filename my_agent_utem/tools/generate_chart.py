@@ -1,7 +1,10 @@
+import os
+import tempfile
 import matplotlib.pyplot as plt
 import io
 import base64
 from google.adk.tools import FunctionTool
+
 
 def generate_progress_chart(project_name: str, total_progress: float, completed: int, not_completed: int, not_applicable: int) -> str:
     """
@@ -44,11 +47,13 @@ def generate_progress_chart(project_name: str, total_progress: float, completed:
     
     plt.tight_layout()
     
-    # Guardar el gráfico
-    img_path = f'progress_chart_{project_name.replace(" ", "_")}.png'
+    # Guardar el gráfico (compatible con Windows)
+    img_filename = f'progress_chart_{project_name.replace(" ", "_")}.png'
+    img_path = os.path.join(tempfile.gettempdir(), img_filename)
     plt.savefig(img_path, dpi=150, bbox_inches='tight')
     plt.close()
     
     return f"Gráfico generado exitosamente y guardado en: {img_path}"
+
 
 generate_chart_tool = FunctionTool(generate_progress_chart)

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Informe de Avance 2025</title>
+    <style>
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 11pt;
+            line-height: 1.3;
+            color: #000;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .section-title {
+            background-color: #f0f0f0;
+            padding: 5px;
+            border: 1px solid #000;
+            font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+            table-layout: fixed;
+            /* Mantiene anchos fijos */
+        }
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 5px;
+            vertical-align: top;
+            font-size: 10pt;
+            word-wrap: break-word;
+            /* Evita que texto largo rompa la tabla */
+        }
+
+        th {
+            background-color: #e6e6e6;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .page-break {
+            page-break-before: always;
+        }
+
+        .footer {
+            font-size: 8pt;
+            text-align: right;
+            margin-top: 20px;
+            border-top: 1px solid #ccc;
+            padding-top: 5px;
+        }
+
+        .ident-label {
+            font-weight: bold;
+            width: 30%;
+            background-color: #fafafa;
+        }
+
+        ul {
+            margin: 0;
+            padding-left: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <div>VRAC - Vicerrectoría Académica</div>
+        <div>UTEM - Universidad Tecnológica Metropolitana</div>
+        <br>
+        <div>PROYECTOS DE DESARROLLO 2022 - 2025</div>
+        <div>INFORME DE AVANCE - Año {{ anio_informe }}</div>
+        <div>DIRECCIÓN DE ASEGURAMIENTO DE CALIDAD DE PRE Y POSTGRADO</div>
+    </div>
+
+    <div class="section-title">1. IDENTIFICACIÓN</div>
+    <table>
+        <tr>
+            <td class="ident-label">Carrera</td>
+            <td>{{ identificacion.carrera }}</td>
+        </tr>
+        <tr>
+            <td class="ident-label">Decano</td>
+            <td>{{ identificacion.decano }}</td>
+        </tr>
+        <tr>
+            <td class="ident-label">Director de Escuela</td>
+            <td>{{ identificacion.director }}</td>
+        </tr>
+        <tr>
+            <td class="ident-label">Jefe de Carrera</td>
+            <td>{{ identificacion.jefe_carrera }}</td>
+        </tr>
+        <tr>
+            <td class="ident-label">Coordinador de Calidad</td>
+            <td>{{ identificacion.coordinador }}</td>
+        </tr>
+        <tr>
+            <td class="ident-label">Fecha inicio / término</td>
+            <td>{{ identificacion.fechas }}</td>
+        </tr>
+        <tr>
+            <td class="ident-label">Fecha presentación informe</td>
+            <td>{{ identificacion.fecha_informe }}</td>
+        </tr>
+    </table>
+
+    <div class="page-break"></div>
+
+    <div class="header">2. RESUMEN DEL PROYECTO DE DESARROLLO</div>
+    <table>
+        <col style="width: 30%;">
+        <col style="width: 70%;">
+        <tr>
+            <th>Aspecto</th>
+            <th>Descripción</th>
+        </tr>
+        <tr>
+            <td><strong>Avance general del proceso de implementación</strong></td>
+            <td>{{ resumen.avance_general }}</td>
+        </tr>
+        <tr>
+            <td><strong>Principales logros y resultados alcanzados a la fecha</strong></td>
+            <td>{{ resumen.logros }}</td>
+        </tr>
+        <tr>
+            <td><strong>Gestión y estrategias de articulación</strong></td>
+            <td>{{ resumen.gestion }}</td>
+        </tr>
+        <tr>
+            <td><strong>Dificultades y desafíos</strong></td>
+            <td>{{ resumen.dificultades }}</td>
+        </tr>
+        <tr>
+            <td><strong>Otra información relevante</strong></td>
+            <td>{{ resumen.otros }}</td>
+        </tr>
+    </table>
+
+    <div class="page-break"></div>
+
+    <div class="header">3. DESCRIPCIÓN DEL ESTADO DE AVANCE</div>
+    <p style="font-size: 9pt;"><em>Nota: L (Logrado), NL (No Logrado), NA (No Aplica).</em></p>
+
+    <div class="section-title">Dimensión N°I: Docencia y resultados del proceso de formación</div>
+    <table>
+        <col style="width: 20%;">
+        <col style="width: 35%;">
+        <col style="width: 10%;">
+        <col style="width: 5%;">
+        <col style="width: 25%;">
+        <col style="width: 5%;">
+        <thead>
+            <tr>
+                <th>Criterio / Objetivo</th>
+                <th>Estado de avance (Acciones)</th>
+                <th>Fecha</th>
+                <th>Est.</th>
+                <th>Medios Verificación</th>
+                <th>Plan Mej.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for accion in dimensiones.dim1.acciones %}
+            <tr>
+                {% if loop.first %}
+                <td rowspan="{{ dimensiones.dim1.acciones | length }}">
+                    <strong>Criterio:</strong> Modelo Educativo y diseño curricular.<br><br>
+                    <strong>Objetivo:</strong> Asegurar la actualización y la calidad de la formación de pregrado,
+                    postgrado y formación continua (Objetivo 1.4 del PDE FING).
+                </td>
+                {% endif %}
+                <td>{{ accion.texto }}</td>
+                <td>{{ accion.fecha }}</td>
+                <td style="text-align: center;">{{ accion.estado }}</td>
+                <td>
+                    <ul>{% for medio in accion.medios %}<li>{{ medio }}</li>{% endfor %}</ul>
+                </td>
+                <td style="text-align: center;">{{ accion.plan_mejora }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6">No hay acciones registradas para esta dimensión.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="section-title">Dimensión N°II: Gestión estratégica y recursos institucionales</div>
+    <table>
+        <col style="width: 20%;">
+        <col style="width: 35%;">
+        <col style="width: 10%;">
+        <col style="width: 5%;">
+        <col style="width: 25%;">
+        <col style="width: 5%;">
+        <thead>
+            <tr>
+                <th>Criterio / Objetivo</th>
+                <th>Estado de avance</th>
+                <th>Fecha</th>
+                <th>Est.</th>
+                <th>Medios Verificación</th>
+                <th>Plan Mej.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for accion in dimensiones.dim2.acciones %}
+            <tr>
+                {% if loop.first %}
+                <td rowspan="{{ dimensiones.dim2.acciones | length }}">
+                    <strong>Criterio:</strong> Gestión interna y recursos.<br><br>
+                    <strong>Objetivo:</strong> Gestionar eficientemente la infraestructura y recursos físicos
+                    propendiendo a la inclusión y la sustentabilidad (Objetivo 5.3 del PDE FING).
+                </td>
+                {% endif %}
+                <td>{{ accion.texto }}</td>
+                <td>{{ accion.fecha }}</td>
+                <td style="text-align: center;">{{ accion.estado }}</td>
+                <td>
+                    <ul>{% for medio in accion.medios %}<li>{{ medio }}</li>{% endfor %}</ul>
+                </td>
+                <td style="text-align: center;">{{ accion.plan_mejora }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6">No hay acciones registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="section-title">Dimensión N°III: Aseguramiento interno de la calidad</div>
+    <table>
+        <col style="width: 20%;">
+        <col style="width: 35%;">
+        <col style="width: 10%;">
+        <col style="width: 5%;">
+        <col style="width: 25%;">
+        <col style="width: 5%;">
+        <tbody>
+            {% for accion in dimensiones.dim3.acciones %}
+            <tr>
+                {% if loop.first %}
+                <td rowspan="{{ dimensiones.dim3.acciones | length }}">
+                    <strong>Criterio:</strong> Gestión y resultados del aseguramiento.<br><br>
+                    <strong>Objetivo:</strong> Cautelar la calidad de los programas formativos (Objetivo 1.4 PDE FING).
+                </td>
+                {% endif %}
+                <td>{{ accion.texto }}</td>
+                <td>{{ accion.fecha }}</td>
+                <td style="text-align: center;">{{ accion.estado }}</td>
+                <td>
+                    <ul>{% for medio in accion.medios %}<li>{{ medio }}</li>{% endfor %}</ul>
+                </td>
+                <td style="text-align: center;">{{ accion.plan_mejora }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6">No hay acciones registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <div class="section-title">Dimensión N°IV: Vinculación con el Medio</div>
+    <table>
+        <col style="width: 20%;">
+        <col style="width: 35%;">
+        <col style="width: 10%;">
+        <col style="width: 5%;">
+        <col style="width: 25%;">
+        <col style="width: 5%;">
+        <tbody>
+            {% for accion in dimensiones.dim4.acciones %}
+            <tr>
+                {% if loop.first %}
+                <td rowspan="{{ dimensiones.dim4.acciones | length }}">
+                    <strong>Criterio:</strong> Resultados e impacto VcM.<br><br>
+                    <strong>Objetivo:</strong> Fortalecer la vinculación con entornos sociales y productivos
+                    retroalimentando actividades académicas (Objetivo 2.3 PDE FING).
+                </td>
+                {% endif %}
+                <td>{{ accion.texto }}</td>
+                <td>{{ accion.fecha }}</td>
+                <td style="text-align: center;">{{ accion.estado }}</td>
+                <td>
+                    <ul>{% for medio in accion.medios %}<li>{{ medio }}</li>{% endfor %}</ul>
+                </td>
+                <td style="text-align: center;">{{ accion.plan_mejora }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6">No hay acciones registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="section-title">Dimensión N°V: Investigación, creación y/o innovación</div>
+    <table>
+        <col style="width: 20%;">
+        <col style="width: 35%;">
+        <col style="width: 10%;">
+        <col style="width: 5%;">
+        <col style="width: 25%;">
+        <col style="width: 5%;">
+        <tbody>
+            {% for accion in dimensiones.dim5.acciones %}
+            <tr>
+                {% if loop.first %}
+                <td rowspan="{{ dimensiones.dim5.acciones | length }}">
+                    <strong>Criterio:</strong> Resultados de investigación.<br><br>
+                    <strong>Objetivo:</strong> Potenciar productividad científica tecnológica aportando al desarrollo
+                    sostenible (Objetivo 2.3/4.3 PDE FING).
+                </td>
+                {% endif %}
+                <td>{{ accion.texto }}</td>
+                <td>{{ accion.fecha }}</td>
+                <td style="text-align: center;">{{ accion.estado }}</td>
+                <td>
+                    <ul>{% for medio in accion.medios %}<li>{{ medio }}</li>{% endfor %}</ul>
+                </td>
+                <td style="text-align: center;">{{ accion.plan_mejora }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6">No hay acciones registradas.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="section-title">4. ANEXOS</div>
+    <ul>
+        {% for anexo in anexos %}
+        <li><strong>{{ anexo.numero }}:</strong> {{ anexo.descripcion }}</li>
+        {% else %}
+        <li>No se adjuntan anexos.</li>
+        {% endfor %}
+    </ul>
+
+    <div class="footer">
+        Documento generado automáticamente por Agente Institucional UTEM - {{ fecha_generacion }}
+    </div>
+
+</body>
+
+</html>

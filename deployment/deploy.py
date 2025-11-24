@@ -9,7 +9,7 @@ import vertexai
 from vertexai import agent_engines
 from vertexai.preview.reasoning_engines import AdkApp
 from google.adk.sessions import VertexAiSessionService, BaseSessionService
-from google.adk.sessions import InMemorySessionService
+
 
 
 # Configuración
@@ -48,8 +48,7 @@ env_vars = {
 }
 
 # CREAR NUEVO AGENTE (sin resource_name)
-remote_app = agent_engines.update(
-    resource_name="projects/muruna-utem-project/locations/us-central1/reasoningEngines/4532120958995005440",
+remote_app = agent_engines.create(
     agent_engine=app,
     display_name=ENGINE_DISPLAY_NAME,
     gcs_dir_name='db_agent_utem',
@@ -59,7 +58,7 @@ remote_app = agent_engines.update(
     service_account="433491555173-compute@developer.gserviceaccount.com", 
 )
 
-print(f"Agente actualizado '{ENGINE_DISPLAY_NAME}' exitosamente.")
+print(f"Agente creado '{ENGINE_DISPLAY_NAME}' exitosamente.")
 print(f"Recurso: {remote_app.resource_name}")
 
 

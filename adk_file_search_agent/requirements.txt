@@ -1,0 +1,4 @@
+google-generativeai
+python-dotenv
+agent-development-kit
+pypdf
