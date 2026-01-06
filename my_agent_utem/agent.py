@@ -1,26 +1,24 @@
-#from google.adk.agents import Agent
 from google.adk.agents import LlmAgent
-from .prompts import PROMPT_AGENT_UTEM
-#from google.adk.tools import AgentTool
+from .prompts import PROMPT_AGENT_UTEM_ORCHESTRATOR
 from .tools.google_search import google_search_tool
-from .tools.query_rag import search_rag_tool, list_documents_tool
 
-#from .tools.generate_chart import generate_chart_tool
-
+# Sub-agentes especializados
 from .agents.bq_agent import bq_universidad_agent
 from .agents.reportes_agent import agente_reportes_institucionales
+from .agents.rag_agent import agente_busqueda_documental
 
 root_agent = LlmAgent(
     name="Agente_UTEM",
     model="gemini-2.5-flash",
-    description="Agente especializado en el análisis de informes de avance de Proyectos de Desarrollo de Carrera (PDC) de la UTEM.",
-    instruction=PROMPT_AGENT_UTEM,
+    description="Agente orquestador principal de UTEM. Coordina sub-agentes especializados para análisis de informes PDC, consultas de matrículas y generación de reportes.",
+    instruction=PROMPT_AGENT_UTEM_ORCHESTRATOR,
     tools=[
-        search_rag_tool, 
-        list_documents_tool,
-        google_search_tool,
-        #generate_chart_tool
+        google_search_tool,  # Solo herramienta directa: búsqueda web
     ],
-    sub_agents=[bq_universidad_agent, agente_reportes_institucionales]
+    sub_agents=[
+        agente_busqueda_documental,              # Búsqueda en documentos RAG
+        bq_universidad_agent,          # Consultas BigQuery matrículas
+        agente_reportes_institucionales # Generación de reportes PDF
+    ]
 )
 

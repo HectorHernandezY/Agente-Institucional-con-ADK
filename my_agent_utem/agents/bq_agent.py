@@ -9,8 +9,6 @@ bq_universidad_agent = LlmAgent(
     description="Consultas Universidad (BigQuery). Tabla autorizada: muruna-utem-project.datos_simulados_utem.datos_utem_test",
     model="gemini-2.5-flash",
     tools=[
-        BigQueryToolset(
-            bigquery_tool_config=bq_config
-        )
+        BigQueryToolset(bigquery_tool_config=bq_config)
     ]
 )

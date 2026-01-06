@@ -1,0 +1,10 @@
+google-adk
+google-cloud-aiplatform
+google-cloud-discoveryengine
+google-cloud-storage
+google-cloud-firestore
+python-docx
+google-auth
+fpdf2
+pdfplumber
+
