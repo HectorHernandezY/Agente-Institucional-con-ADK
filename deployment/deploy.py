@@ -11,8 +11,6 @@ from vertexai.preview.reasoning_engines import AdkApp
 from google.adk.sessions import VertexAiSessionService, BaseSessionService
 
 
-
-# Configuración
 PROJECT_ID = "muruna-utem-project"
 LOCATION = "us-central1"
 STAGING_BUCKET = "gs://db_agent_utem"
@@ -23,7 +21,6 @@ EXTRA_PACKAGES = ["./my_agent_utem"]
 def build_session_service() -> BaseSessionService:
     return VertexAiSessionService()
 
-# INIT PRIMERO
 vertexai.init(
     project=PROJECT_ID,
     location=LOCATION,
@@ -32,7 +29,6 @@ vertexai.init(
 
 print("Iniciando actualización del agente...")
 
-# IMPORTAR EL AGENTE DESPUÉS DEL INIT
 from my_agent_utem.agent import root_agent
 
 app = AdkApp(
@@ -47,7 +43,6 @@ env_vars = {
     "GCS_RAG_BUCKET": "db_agent_utem",
 }
 
-# CREAR NUEVO AGENTE (sin resource_name)
 remote_app = agent_engines.create(
     agent_engine=app,
     display_name=ENGINE_DISPLAY_NAME,

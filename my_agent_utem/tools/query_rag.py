@@ -1,9 +1,4 @@
-"""
-query_rag.py — Motor de búsqueda RAG para documentos UTEM
-
-Este módulo implementa búsqueda vectorial simple basada en similitud coseno.
-Sincronizado con el backend de indexación que usa pdfplumber y separadores "|" para tablas.
-"""
+"""Motor de búsqueda RAG para documentos UTEM."""
 from __future__ import annotations
 import os
 import re
@@ -18,43 +13,27 @@ from google.adk.tools import FunctionTool
 from google.auth import default
 import vertexai
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Configuración y Constantes
-# ──────────────────────────────────────────────────────────────────────────────
+
 PROJECT_ID = os.getenv("FIRESTORE_PROJECT_ID", "muruna-utem-project")
 VERTEX_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 DATABASE_ID = os.getenv("FIRESTORE_DATABASE_ID", "(default)")
 COLLECTION_NAME = "rag_vectores2"
 
-# Configuración de búsqueda (tuneable)
-DEFAULT_TOP_K = 35  # Número de resultados a retornar
-DEFAULT_SIMILARITY_THRESHOLD = 0.45  # Umbral mínimo de similitud coseno
+DEFAULT_TOP_K = 35
+DEFAULT_SIMILARITY_THRESHOLD = 0.45
 
-# Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ──────────────────────────────────────────────────────────────────────────────
-# LAZY INITIALIZATION - Los clientes se inicializan solo cuando se necesitan
-# Esto es CRÍTICO para Cloud Run: durante el build no hay credenciales disponibles
-# ──────────────────────────────────────────────────────────────────────────────
 _db = None
 _embedding_model = None
 _initialized = False
 
-# Modelos de embeddings - SINCRONIZADO con el indexador
-# IMPORTANTE: text-multilingual-embedding-002 es mejor para español
-# Si cambias el modelo, debes RE-INDEXAR todos los documentos en Cloud Run
-EMBEDDING_MODELS = [
-    "text-multilingual-embedding-002",  # Óptimo para español/multilingüe
-]
+EMBEDDING_MODELS = ["text-multilingual-embedding-002"]
 
 
 def _initialize_clients():
-    """
-    Inicializa los clientes de GCP de forma lazy (solo cuando se necesitan).
-    Esta función es segura para llamar múltiples veces.
-    """
+    """Inicializa los clientes de GCP."""
     global _db, _embedding_model, _initialized
     
     if _initialized:
@@ -71,10 +50,8 @@ def _initialize_clients():
             credentials=credentials
         )
         
-        # Inicializar Vertex AI
         vertexai.init(project=PROJECT_ID, location=VERTEX_LOCATION, credentials=credentials)
         
-        # Cargar modelo de embeddings
         for model_name in EMBEDDING_MODELS:
             try:
                 _embedding_model = TextEmbeddingModel.from_pretrained(model_name)
@@ -107,9 +84,7 @@ def get_embedding_model():
     return _embedding_model
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Utilidades de cálculo vectorial
-# ──────────────────────────────────────────────────────────────────────────────
+
 def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
     """Calcula similitud coseno entre dos vectores usando numpy optimizado."""
     a = np.array(vec1, dtype=np.float32)
@@ -121,32 +96,23 @@ def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
     return float(np.dot(a, b) / (norm_a * norm_b))
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Normalización de nombres de documentos
-# ──────────────────────────────────────────────────────────────────────────────
+
 def normalize_doc_name(name: str) -> str:
-    """Normaliza nombre de documento para búsqueda flexible."""
-    # Quitar extensiones comunes
+    """Normaliza nombre de documento para búsqueda."""
     name = re.sub(r'\.(docx|pdf|txt|md|csv)$', '', name, flags=re.IGNORECASE)
     name = name.lower()
-    # Normalizar espacios y caracteres especiales
     name = re.sub(r'[_\-\(\)\[\]]', ' ', name)
     name = re.sub(r'\s+', ' ', name)
     return name.strip()
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Cache de documentos para reducir llamadas a Firestore
-# ──────────────────────────────────────────────────────────────────────────────
 _docs_cache: Dict[str, Any] = {}
 _cache_timestamp: float = 0
-CACHE_TTL_SECONDS = 300  # 5 minutos
+CACHE_TTL_SECONDS = 300
 
 
 def get_documents_metadata(force_refresh: bool = False) -> List[Dict[str, Any]]:
-    """
-    Obtiene metadata de todos los documentos con cache para reducir llamadas a Firestore.
-    """
+    """Obtiene metadata de todos los documentos con cache."""
     import time
     global _docs_cache, _cache_timestamp
     
@@ -173,9 +139,7 @@ def get_documents_metadata(force_refresh: bool = False) -> List[Dict[str, Any]]:
         return list(_docs_cache.values()) if _docs_cache else []
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Función principal de búsqueda vectorial
-# ──────────────────────────────────────────────────────────────────────────────
+
 def search_documents(
     query: str,
     document_name: Optional[str] = None,
@@ -197,9 +161,7 @@ def search_documents(
     try:
         logger.info(f"🔎 Búsqueda RAG: '{query}' | doc_filter: '{document_name}'")
 
-        # ───────────────────────────────────────────────────────────────────────
-        # Paso 1: Generar embedding de la query
-        # ───────────────────────────────────────────────────────────────────────
+
         try:
             model = get_embedding_model()
             query_embeddings = model.get_embeddings([query])
@@ -208,9 +170,7 @@ def search_documents(
             logger.error(f"Error generando embedding: {e}")
             return {"ok": False, "status": "Error", "message": f"Error en embedding: {e}"}
         
-        # ───────────────────────────────────────────────────────────────────────
-        # Paso 2: Obtener documentos y aplicar filtro
-        # ───────────────────────────────────────────────────────────────────────
+
         all_docs = get_documents_metadata()
         
         if not all_docs:
@@ -226,12 +186,10 @@ def search_documents(
                 d_name = doc_data.get("doc_name", "")
                 norm_doc = normalize_doc_name(d_name)
                 
-                # Coincidencia por substring
                 if norm_search in norm_doc or norm_doc in norm_search:
                     target_doc_ids.append(doc_data['_firestore_id'])
                     continue
                     
-                # Coincidencia por tokens (>50% de palabras coinciden)
                 doc_tokens = set(norm_doc.split())
                 common_tokens = search_tokens.intersection(doc_tokens)
                 if common_tokens and (len(common_tokens) / len(search_tokens) >= 0.5):
@@ -249,9 +207,7 @@ def search_documents(
         
         logger.info(f"   Buscando en {len(target_doc_ids)} documento(s)")
         
-        # ───────────────────────────────────────────────────────────────────────
-        # Paso 3: Búsqueda vectorial
-        # ───────────────────────────────────────────────────────────────────────
+
         candidates: List[Dict[str, Any]] = []
         db = get_db()
         
@@ -271,8 +227,6 @@ def search_documents(
                 
                 chunk_text = chunk_data.get("text", "")
                 chunk_embedding = chunk_data["embedding"]
-                
-                # Calcular similitud coseno
                 similarity = cosine_similarity(query_vector, chunk_embedding)
                 
                 if similarity >= similarity_threshold:
@@ -288,7 +242,6 @@ def search_documents(
                         "firestore_path": f"{COLLECTION_NAME}/{doc_id}/chunks/{chunk_doc.id}"
                     })
         
-        # Ordenar por similitud y tomar top_k
         candidates.sort(key=lambda x: x["similarity_score"], reverse=True)
         final_results = candidates[:top_k]
         
@@ -303,9 +256,7 @@ def search_documents(
                 "contexts_text": ""
             }
 
-        # ───────────────────────────────────────────────────────────────────────
-        # Paso 4: Actualizar métricas de acceso (async-safe)
-        # ───────────────────────────────────────────────────────────────────────
+
         try:
             db = get_db()
             batch = db.batch()
@@ -321,9 +272,7 @@ def search_documents(
         except Exception as e:
             logger.warning(f"Error actualizando métricas: {e}")
         
-        # ───────────────────────────────────────────────────────────────────────
-        # Paso 5: Formatear respuesta
-        # ───────────────────────────────────────────────────────────────────────
+
         contexts_text = "\n\n---\n\n".join([
             f"📄 [{r['doc_name']}] (Chunk {r['chunk_index']}, Score: {r['similarity_score']:.3f})\n{r['text']}"
             for r in final_results
@@ -349,14 +298,8 @@ def search_documents(
         }
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Función de listado de documentos
-# ──────────────────────────────────────────────────────────────────────────────
 def list_available_documents() -> Dict[str, Any]:
-    """
-    Lista todos los documentos indexados con su metadata.
-    Usa cache para mejorar rendimiento.
-    """
+    """Lista todos los documentos indexados con su metadata."""
     try:
         docs = get_documents_metadata(force_refresh=False)
         documents = []
@@ -409,9 +352,7 @@ def get_document_stats() -> Dict[str, Any]:
         return {"ok": False, "error": str(e)}
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Exportar herramientas para ADK
-# ──────────────────────────────────────────────────────────────────────────────
+
 search_rag_tool = FunctionTool(search_documents)
 list_documents_tool = FunctionTool(list_available_documents)
 stats_tool = FunctionTool(get_document_stats)

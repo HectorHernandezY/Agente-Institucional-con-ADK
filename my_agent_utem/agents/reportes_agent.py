@@ -20,10 +20,10 @@ agente_reportes_institucionales = LlmAgent(
     - Subir a Cloud Storage con upload_pdf_to_storage_tool
     """,
     tools=[
-        generate_pdf_report_tool,      # Generador de PDF (local)
-        upload_pdf_to_storage_tool,    # Subir PDF a Cloud Storage
-        search_rag_tool,               # Busqueda en documentos
-        list_documents_tool            # Listar documentos disponibles
+        generate_pdf_report_tool,
+        upload_pdf_to_storage_tool,
+        search_rag_tool,
+        list_documents_tool
     ],
     instruction=PROMPT_AGENT_REPORTES
 )
