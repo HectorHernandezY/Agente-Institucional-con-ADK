@@ -8,6 +8,4 @@
 __pycache__/
 *.pyc
 
-# Archivos locales que no quiero sobrescribir
-pyproject.toml
-poetry.lock
+

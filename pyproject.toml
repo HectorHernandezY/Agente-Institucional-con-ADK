@@ -1,0 +1,32 @@
+[project]
+name = "agent-utem"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "HectorHernandezY",email = "h.hernandezy@utem.cl"}
+]
+readme = "README.md"
+requires-python = "^3.12,<3.13"
+dependencies = [
+    "google-adk[eval] (>=1.20.0,<2.0.0)",
+    "python-dotenv (>=1.1.1,<2.0.0)",
+    "llama-index (>=0.14.3,<0.15.0)",
+    "google-cloud-firestore (>=2.21.0,<3.0.0)",
+    "reportlab (>=4.4.4,<5.0.0)",
+    "firebase (>=4.0.1,<5.0.0)",
+    "flask (>=3.1.2,<4.0.0)",
+    "flask-cors (>=6.0.1,<7.0.0)",
+    "python-docx (>=1.2.0,<2.0.0)",
+    "pypdf2 (>=3.0.1,<4.0.0)",
+    "matplotlib (>=3.10.7,<4.0.0)",
+    "pdfkit (>=1.0.0,<2.0.0)",
+    "xhtml2pdf (>=0.2.17,<0.3.0)",
+    "google-cloud-iam (>=2.20.0,<3.0.0)",
+    "fpdf2 (>=2.8.5,<3.0.0)",
+    "google-genai (>=1.53.0,<2.0.0)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
