@@ -24,14 +24,12 @@ Este proyecto permite:
 1. **Clonar el repositorio**
    ```bash
    git clone <url-del-repositorio>
-   cd agent-utem
+
    ```
 
 2. **Crear entorno virtual**
    ```bash
-   python -m venv .venv
-   .venv\Scripts\activate  # Windows
-   source .venv/bin/activate  # Linux/Mac
+   poetry config virtualenvs.in-project true
    ```
 
 3. **Instalar dependencias**
@@ -50,8 +48,13 @@ Este proyecto permite:
    Crear archivo `.env`:
    ```
    FIRESTORE_PROJECT_ID=tu-proyecto
-   FIRESTORE_DATABASE_ID=(default)
    GOOGLE_CLOUD_LOCATION=us-central1
+   GCS_RAG_BUCKET=tu-bucket
+   GOOGLE_API_KEY=tu-api-key
+   GOOGLE_GENAI_USE_VERTEXAI=TRUE
+   GOOGLE_CLOUD_PROJECT=tu-proyecto
+
+
    ```
 
 ## Uso
@@ -59,7 +62,7 @@ Este proyecto permite:
 ### Ejecutar localmente
 
 ```bash
-adk run my_agent_utem
+poetry run adk web
 ```
 
 ### Desplegar en Cloud Run
@@ -97,6 +100,4 @@ Una vez ejecutando el agente, puedes hacer consultas como:
 - "¿Cuáles son las actividades logradas de Ciencia de Datos?"
 - "Genera un reporte PDF del informe de Ingeniería Industrial"
 
-## Licencia
 
-Proyecto interno de la Universidad Tecnológica Metropolitana.
